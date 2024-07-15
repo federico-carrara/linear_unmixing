@@ -36,7 +36,7 @@ class HSIData:
         self.shortname = os.path.basename(data_dir).strip(".mat")
 
         data = sio.loadmat(data_dir)
-        print(f"Matlab data keys: {data.keys()}")
+        # print(f"Matlab data keys: {data.keys()}")
 
         for key in filter(
             lambda k: not k.startswith("__"),
@@ -81,9 +81,9 @@ class HSIData:
     def __repr__(self):
         msg = f"HSI => {self.shortname}\n"
         msg += "---------------------\n"
-        msg += f"{self.L} bands,\n"
-        msg += f"{self.H} lines, {self.W} samples, ({self.N} pixels),\n"
-        msg += f"{self.p} endmembers ({self.labels})\n"
+        msg += f"N. spectral bands: {self.L},\n"
+        msg += f"Image shape: {self.H} X {self.W}, Tot pixels: {self.N},\n"
+        msg += f"N. endmembers: {self.p} ({self.labels})\n"
         msg += f"GlobalMinValue: {self.Y.min()}, GlobalMaxValue: {self.Y.max()}\n"
         return msg
 
