@@ -2,101 +2,103 @@ import time
 
 import numpy as np
 import cvxopt as cvx
+from tqdm import tqdm
 
 class FCLSU:
-    def __init__(self):
-        pass
+    def __init__(
+        self,
+        mixed_img: np.ndarray,  
+        ref_matrix: np.ndarray
+    ) -> None:
+        
+        self.spatial_dims = mixed_img.shape[1:]
+        self.Y = self._unroll_image(mixed_img) # shape: (n, N)
+        self.E = ref_matrix # shape: (n, p)
+        
 
     def __repr__(self):
         msg = f"{self.__class__.__name__}"
         return msg
+    
+    @staticmethod
+    def _unroll_image(img: np.ndarray) -> np.ndarray:
+        return img.reshape(img.shape[0], -1)
 
     @staticmethod
-    def _numpy_None_vstack(A1, A2):
-        if A1 is None:
-            return A2
-        else:
-            return np.vstack([A1, A2])
+    def _roll_image(img: np.ndarray, shape: tuple) -> np.ndarray:
+        return img.reshape(shape)
 
     @staticmethod
-    def _numpy_None_concatenate(A1, A2):
-        if A1 is None:
-            return A2
-        else:
-            return np.concatenate([A1, A2])
-
-    @staticmethod
-    def _numpy_to_cvxopt_matrix(A):
+    def _numpy_to_cvxopt_matrix(A: np.ndarray) -> cvx.matrix:
         A = np.array(A, dtype=np.float64)
         if A.ndim == 1:
             return cvx.matrix(A, (A.shape[0], 1), "d")
         else:
             return cvx.matrix(A, A.shape, "d")
 
-    def solve(self, Y, E):
+    def solve(self) -> np.ndarray:
         """
-        Performs fully constrained least squares of each pixel in M
-        using the endmember signatures of U. Fully constrained least squares
+        Performs fully constrained least squares of each pixel in Y (n x N matrix)
+        using the endmember signatures of E. Fully constrained least squares
         is least squares with the abundance sum-to-one constraint (ASC) and the
         abundance nonnegative constraint (ANC).
-        Parameters:
-            Y: `numpy array`
-                2D data matrix (L x N).
-            E: `numpy array`
-                2D matrix of endmembers (L x p).
+               
         Returns:
-            X: `numpy array`
-                2D abundance maps (p x N).
+            C: `numpy array`
+                Concentration/abundance maps for different endmembers (p x H x W x D).
+    
         References:
             Daniel Heinz, Chein-I Chang, and Mark L.G. Fully Constrained
             Least-Squares Based Linear Unmixing. Althouse. IEEE. 1999.
+    
         Notes:
-            Three sources have been useful to build the algorithm:
+            1. These sources have been useful to build the algorithm:
                 * The function hyperFclsMatlab, part of the Matlab Hyperspectral
                 Toolbox of Isaac Gerg.
                 * The Matlab (tm) help on lsqlin.
                 * And the Python implementation of lsqlin by Valera Vishnevskiy, click:
                 http://maggotroot.blogspot.ca/2013/11/constrained-linear-least-squares-in.html
                 , it's great code.
+                
+            2. Shapes of matrices and dimensions
+                - H, W, D: spatial dimensions of the input image (2D or 3D).
+                - n: number of spectral bands in the input image.
+                - p: number of endmembers in the input image.
+                - N: total number of pixels in the input image.
+                
+            3. Constraints are in this form:
+                - Gc <= h --> -Ic <= 0
+                - Ac = b --> 1(_p)c = 1
         """
-        tic = time.time()
-        assert len(Y.shape) == 2
-        assert len(E.shape) == 2
+        # tic = time.time()
+        # assert len(self.Y.shape) == 2
+        # assert len(self.E.shape) == 2
+        
+        assert self.Y.shape[0] == self.E.shape[0]
 
-        L1, N = Y.shape
-        L2, p = E.shape
-
-        assert L1 == L2
-
-        # Reshape to match implementation
-        M = np.copy(Y.T)
-        U = np.copy(E.T)
+        n, N = self.Y.shape # shape: (n, N)
+        n, p = self.E.shape # shape: (n, p)
 
         cvx.solvers.options["show_progress"] = False
 
-        U = U.astype(np.double)
+        # NOTE: cvxopt only accepts double dtype
+        E = self._numpy_to_cvxopt_matrix(self.E.astype(np.double)) # shape: (n, p)
+        Q = E.T * E # shape: (p, p)
 
-        C = self._numpy_to_cvxopt_matrix(U.T)
-        Q = C.T * C
+        # Compute the constraints for the problem
+        G = self._numpy_to_cvxopt_matrix(-np.eye(p, dtype=np.double)) # shape: (p, p)
+        h = self._numpy_to_cvxopt_matrix(np.zeros(p, dtype=np.double)) # shape: (p,)
+        A = self._numpy_to_cvxopt_matrix(np.ones((1, p), dtype=np.double)) # shape: (1, p)
+        b = self._numpy_to_cvxopt_matrix(np.ones(1, dtype=np.double)) # shape: (1,)
 
-        lb_A = -np.eye(p)
-        lb = np.repeat(0, p)
-        A = self._numpy_None_vstack(None, lb_A)
-        b = self._numpy_None_concatenate(None, -lb)
-        A = self._numpy_to_cvxopt_matrix(A)
-        b = self._numpy_to_cvxopt_matrix(b)
-
-        Aeq = self._numpy_to_cvxopt_matrix(np.ones((1, p)))
-        beq = self._numpy_to_cvxopt_matrix(np.ones(1))
-
-        M = np.array(M, dtype=np.float64)
-        M = M.astype(np.double)
-        X = np.zeros((N, p), dtype=np.float32)
-        for n1 in range(N):
-            d = cvx.matrix(M[n1], (L1, 1), "d")
-            q = -d.T * C
-            sol = cvx.solvers.qp(Q, q.T, A, b, Aeq, beq, None, None)["x"]
-            X[n1] = np.array(sol).squeeze()
-        tac = time.time()
-        print(f"{self} took {tac - tic:.2f}s")
-        return X.T
+        X = np.zeros((N, p)) # shape: (N, p)
+        for i in tqdm(range(N), desc="FCLSU for pixel"):
+            y = cvx.matrix(self.Y[:, i].astype(np.double), (n, 1), "d") # shape: (n, 1)
+            r = -y.T * E # shape: (1, p)
+            sol = cvx.solvers.qp(Q, r.T, G, h, A, b, None, None)["x"]
+            X[i, :] = np.array(sol).squeeze()
+        # tac = time.time()
+        # print(f"{self} took {tac - tic:.2f}s")
+        X = X.T # shape: (p, N)
+        new_shape = (p, *self.spatial_dims)
+        return self._roll_image(X, new_shape)

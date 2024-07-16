@@ -3,6 +3,7 @@ from scipy.linalg import lstsq
 from tqdm import tqdm 
 
 # TODO: refactor methods to be applied on the flattened image
+# TODO: refactor to make it more similar to the FCLSU class
 
 def lstsq_fit_2D(mixed_img, ref_matrix):
     _, n_rows, n_cols = mixed_img.shape
