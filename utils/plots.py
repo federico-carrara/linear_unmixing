@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from .metrics import pixel_wise_mse
+from .metrics import PixelWiseMSE
 
 
 def plot_unmixed_vs_gt(
@@ -18,7 +18,7 @@ def plot_unmixed_vs_gt(
         unmixed_img = unmixed_img[:, np.newaxis, ...]
     
     for i in range(num_images):
-        mse = pixel_wise_mse(gt_img[i, ...], unmixed_img[i, ...])
+        mse = PixelWiseMSE(gt_img[i, ...], unmixed_img[i, ...])
         
         if i == 0:
             ax[i, 0].set_title(f"GT (abundancy/concentration) {"- MIP" if is_3d else ""}")
@@ -50,6 +50,6 @@ def plot_unmixed_vs_gt(
     plt.draw()
 
     # Quantitative results
-    mse_values = [pixel_wise_mse(gt_img[i, ...], unmixed_img[i, ...]).mean() for i in range(num_images)]
+    mse_values = [PixelWiseMSE(gt_img[i, ...], unmixed_img[i, ...]).mean() for i in range(num_images)]
     mse_str = ", ".join([f"{mse:.2e}" for mse in mse_values])
     print(f"MSE: {mse_str}")
