@@ -4,30 +4,9 @@ import numpy as np
 import cvxopt as cvx
 from tqdm import tqdm
 
-class FCLSU:
-    def __init__(
-        self,
-        mixed_img: np.ndarray,  
-        ref_matrix: np.ndarray
-    ) -> None:
-        
-        self.spatial_dims = mixed_img.shape[1:]
-        self.Y = self._unroll_image(mixed_img) # shape: (n, N)
-        self.E = ref_matrix # shape: (n, p)
-        
+from .LeastSquares import LeastSquares
 
-    def __repr__(self):
-        msg = f"{self.__class__.__name__}"
-        return msg
-    
-    @staticmethod
-    def _unroll_image(img: np.ndarray) -> np.ndarray:
-        return img.reshape(img.shape[0], -1)
-
-    @staticmethod
-    def _roll_image(img: np.ndarray, shape: tuple) -> np.ndarray:
-        return img.reshape(shape)
-
+class FCLSU(LeastSquares):
     @staticmethod
     def _numpy_to_cvxopt_matrix(A: np.ndarray) -> cvx.matrix:
         A = np.array(A, dtype=np.float64)
@@ -69,11 +48,7 @@ class FCLSU:
             3. Constraints are in this form:
                 - Gc <= h --> -Ic <= 0
                 - Ac = b --> 1(_p)c = 1
-        """
-        # tic = time.time()
-        # assert len(self.Y.shape) == 2
-        # assert len(self.E.shape) == 2
-        
+        """        
         assert self.Y.shape[0] == self.E.shape[0]
 
         n, N = self.Y.shape # shape: (n, N)
@@ -82,6 +57,7 @@ class FCLSU:
         cvx.solvers.options["show_progress"] = False
 
         # NOTE: cvxopt only accepts double dtype
+        Y = self._numpy_to_cvxopt_matrix(self.Y.astype(np.double)) # shape: (n, N)
         E = self._numpy_to_cvxopt_matrix(self.E.astype(np.double)) # shape: (n, p)
         Q = E.T * E # shape: (p, p)
 
@@ -91,14 +67,12 @@ class FCLSU:
         A = self._numpy_to_cvxopt_matrix(np.ones((1, p), dtype=np.double)) # shape: (1, p)
         b = self._numpy_to_cvxopt_matrix(np.ones(1, dtype=np.double)) # shape: (1,)
 
-        X = np.zeros((N, p)) # shape: (N, p)
+        C = np.zeros((N, p)) # shape: (N, p)
         for i in tqdm(range(N), desc="FCLSU for pixel"):
-            y = cvx.matrix(self.Y[:, i].astype(np.double), (n, 1), "d") # shape: (n, 1)
+            y = Y[:, i] # shape: (n, 1)
             r = -y.T * E # shape: (1, p)
             sol = cvx.solvers.qp(Q, r.T, G, h, A, b, None, None)["x"]
-            X[i, :] = np.array(sol).squeeze()
-        # tac = time.time()
-        # print(f"{self} took {tac - tic:.2f}s")
-        X = X.T # shape: (p, N)
+            C[i, :] = np.array(sol).squeeze()
+        C = C.T # shape: (p, N)
         new_shape = (p, *self.spatial_dims)
-        return self._roll_image(X, new_shape)
+        return self._roll_image(C, new_shape)

@@ -2,42 +2,52 @@ import numpy as np
 from scipy.linalg import lstsq
 from tqdm import tqdm 
 
-# TODO: refactor methods to be applied on the flattened image
-# TODO: refactor to make it more similar to the FCLSU class
+class LeastSquares:
+    def __init__(
+        self,
+        mixed_img: np.ndarray,  
+        ref_matrix: np.ndarray
+    ) -> None:
+        
+        self.spatial_dims = mixed_img.shape[1:]
+        self.Y = self._unroll_image(mixed_img) # shape: (n, N)
+        self.E = ref_matrix # shape: (n, p)
+        
+    def __repr__(self):
+        msg = f"{self.__class__.__name__}"
+        return msg
+    
+    @staticmethod
+    def _unroll_image(img: np.ndarray) -> np.ndarray:
+        return img.reshape(img.shape[0], -1)
 
-def lstsq_fit_2D(mixed_img, ref_matrix):
-    _, n_rows, n_cols = mixed_img.shape
-    n_fps = ref_matrix.shape[1]
-
-    fp_conc_img = np.zeros((n_fps, n_rows, n_cols))
-
-    for r in range(n_rows):
-        for c in range(n_cols):
-            mixed_pixel = mixed_img[:, r, c]
-            fp_conc, residuals, rank, sing_vals = lstsq(a=ref_matrix, b=mixed_pixel)
-            fp_conc_img[:, r, c] = fp_conc
-
-    return fp_conc_img
-
-def lstsq_fit_3D(mixed_img, ref_matrix):
-    _, nz, ny, nx = mixed_img.shape
-    n_fps = ref_matrix.shape[1]
-
-    fp_conc_img = np.zeros((n_fps, nz, ny, nx))
-
-    for z in tqdm(range(nz), desc="Solving LS on z slice"):
-        for y in range(ny):
-            for x in range(nx):
-                mixed_voxel = mixed_img[:, z, y, x]
-                fp_conc, residuals, rank, sing_vals = lstsq(a=ref_matrix, b=mixed_voxel)
-                fp_conc_img[:, z, y, x] = fp_conc
-
-    return fp_conc_img
-
-def lstsq_fit(mixed_img, ref_matrix):
-    if len(mixed_img.shape) == 4:
-        return lstsq_fit_3D(mixed_img, ref_matrix)
-    elif len(mixed_img.shape) == 3:
-        return lstsq_fit_2D(mixed_img, ref_matrix)
-    else:
-        raise ValueError(f"Invalid image shape {mixed_img.shape}")
+    @staticmethod
+    def _roll_image(img: np.ndarray, shape: tuple) -> np.ndarray:
+        return img.reshape(shape)
+    
+    def solve(self) -> np.ndarray:
+        """Perform least squares for each pixel in Y (n x N matrix) using the
+        endmember signatures of E. 
+               
+        Returns:
+        --------
+            X: `nd.nparray`
+                Concentration/abundance maps for different endmembers (p x H x W x D).
+    
+        Notes:
+            1. Shapes of matrices and dimensions
+                - H, W, D: spatial dimensions of the input image (2D or 3D).
+                - n: number of spectral bands in the input image.
+                - p: number of endmembers in the input image.
+                - N: total number of pixels in the input image.
+        """
+        n, N = self.Y.shape # shape: (n, N)
+        n, p = self.E.shape # shape: (n, p)
+        
+        X = np.zeros((N, p)) # shape: (N, p)
+        for i in tqdm(range(N), desc="Solving LS for pixel"):
+            sol, _, _, _ = lstsq(a=self.E, b=self.Y[:, i])
+            X[i, :] = np.array(sol).squeeze()
+        X = X.T # shape: (p, N)
+        new_shape = (p, *self.spatial_dims)
+        return self._roll_image(X, new_shape)
