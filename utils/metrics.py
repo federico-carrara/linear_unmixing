@@ -3,6 +3,9 @@ import numpy as np
 def PixelWiseMSE(gt: np.ndarray, pred: np.ndarray) -> np.ndarray:
     return (gt - pred)**2
 
+def PixelWiseMAE(gt: np.ndarray, pred: np.ndarray) -> np.ndarray:
+    return abs(gt - pred)
+
 def PSNR(
     gt: np.ndarray, 
     pred: np.ndarray, 
