@@ -10,12 +10,16 @@ class LeastSquares:
     ) -> None:
         
         self.spatial_dims = mixed_img.shape[1:]
+        mixed_img = self._normalize(mixed_img)
         self.Y = self._unroll_image(mixed_img) # shape: (n, N)
         self.E = ref_matrix # shape: (n, p)
         
     def __repr__(self):
         msg = f"{self.__class__.__name__}"
         return msg
+    
+    def _normalize(self, img: np.ndarray) -> np.ndarray:
+        return (img - img.min()) / (img.max() - img.min())
     
     @staticmethod
     def _unroll_image(img: np.ndarray) -> np.ndarray:
