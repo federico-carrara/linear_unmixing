@@ -8,12 +8,14 @@ from .metrics import RangeInvariantPSNR, PixelWiseMAE
 def plot_unmixed_vs_gt(
     gt_img: np.ndarray | list[np.ndarray], 
     unmixed_img: np.ndarray, 
+    method: str
 ):
     if isinstance(gt_img, list):
         gt_img = np.concatenate(gt_img, axis=0)
     
     num_images = gt_img.shape[0]
     fig, ax = plt.subplots(num_images, 3, figsize=(13, 4 * num_images))
+    fig.suptitle(f"{method} Unmixing Results", fontsize=20)
     
     is_3d = len(gt_img.shape) == 4
     if not is_3d:
