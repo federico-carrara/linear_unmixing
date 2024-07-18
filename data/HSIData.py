@@ -36,7 +36,6 @@ class HSIData:
         self.shortname = os.path.basename(data_dir).strip(".mat")
 
         data = sio.loadmat(data_dir)
-        # print(f"Matlab data keys: {data.keys()}")
 
         for key in filter(
             lambda k: not k.startswith("__"),
@@ -64,7 +63,6 @@ class HSIData:
             # Curate labels from MATLAB string formatting
             tmp_labels = list(self.labels)
             self.labels = [s.strip(" ") for s in tmp_labels]
-
         except AssertionError:
             # Create pseudo labels
             self.labels = [f"#{ii}" for ii in range(self.p)]
