@@ -63,4 +63,4 @@ def plot_unmixed_vs_gt(
 
     # Quantitative results
     psnr_str = ", ".join([f"{psnr:2f}" for psnr in psnr_values])
-    print(f"PSNR: {psnr_str}")
+    print(f"{method} PSNR: {psnr_str}")
