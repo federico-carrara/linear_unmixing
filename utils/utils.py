@@ -1,6 +1,7 @@
 import xarray as xr 
 import numpy as np
 
+
 def coarsen_img(
     img: np.ndarray, 
     downscaling_factor: int
