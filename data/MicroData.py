@@ -92,7 +92,7 @@ class MicroData:
         msg += "Simulated Metadata:\n"
         msg += "\n".join([f"+ {k}: {v}" for k, v in self.sim_metadata.items()]) + "\n"
         msg += "-------------------------\n"
-        msg += f"PSNR (noisy vs. clean): {self.PSRN:.2f}"
+        msg += f"PSNR (noisy vs. clean): {self.PSNR:.2f}"
         return msg
         
     def _downscale(self, img: np.ndarray) -> np.ndarray:
@@ -130,7 +130,7 @@ class MicroData:
         return json_dict
     
     @property
-    def PSRN(self) -> float:
+    def PSNR(self) -> float:
         assert self.mixed_clean_img_downsc.shape == self.mixed_noisy_img.shape, \
             "Images should be of same shape for PSNR computation."
         return SpectralPSNR(
