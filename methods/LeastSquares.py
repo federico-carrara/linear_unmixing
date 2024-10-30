@@ -6,9 +6,8 @@ class LeastSquares:
     def __init__(
         self,
         mixed_img: np.ndarray,  
-        ref_matrix: np.ndarray
-    ) -> None:
-        
+        ref_matrix: np.ndarray,
+    ) -> None:       
         self.spatial_dims = mixed_img.shape[1:]
         mixed_img = self._normalize(mixed_img)
         self.Y = self._unroll_image(mixed_img) # shape: (n, N)
@@ -29,7 +28,7 @@ class LeastSquares:
     def _roll_image(img: np.ndarray, shape: tuple) -> np.ndarray:
         return img.reshape(shape)
     
-    def solve(self) -> np.ndarray:
+    def solve(self, *, progr_bar: bool = True) -> np.ndarray:
         """Perform least squares for each pixel in Y (n x N matrix) using the
         endmember signatures of E. 
                
@@ -49,7 +48,7 @@ class LeastSquares:
         n, p = self.E.shape # shape: (n, p)
         
         X = np.zeros((N, p)) # shape: (N, p)
-        for i in tqdm(range(N), desc="Solving LS for pixel"):
+        for i in tqdm(range(N), desc="Solving LS for pixel", disable=progr_bar):
             sol, _, _, _ = lstsq(a=self.E, b=self.Y[:, i])
             X[i, :] = np.array(sol).squeeze()
         X = X.T # shape: (p, N)
