@@ -50,6 +50,7 @@ class BioSRData:
         """
         assert gt_type in ['digital', 'optical'], \
             ValueError("Invalid ground truth type! Choose from 'digital', 'optical'.")
+        assert idx in range(1, 101), ValueError("Invalid index! Choose from 1 to 100.")
         
         self.data_dir = data_dir
         self.idx = idx
@@ -57,36 +58,27 @@ class BioSRData:
         
         # Load Images
         imgs_dir = os.path.join(data_dir, "imgs")
-        print("-------------------------")
-        print("Loading images...")
-        self.gt_img = self.read_BioSR_image(
+        self.gt_img = self._read_BioSR_image(
             path_to_dir=os.path.join(imgs_dir, f"{gt_type}_pf"),
             img_type=f"{gt_type}_pf", 
             idx=idx
-        )
-        print(f"    Loaded ground truth image!") # Shape (F, [Z], Y, X)
-        self.mixed_img = self.read_BioSR_image(
+        ) # Shape (F, [Z], Y, X)
+        self.mixed_img = self._read_BioSR_image(
             path_to_dir=os.path.join(imgs_dir, f"digital"), 
             img_type="digital", 
             idx=idx
-        )
-        print(f"    Loaded noisy mixed image!") # Shape (W, [Z], Y, X)
+        ) # Shape (W, [Z], Y, X)
         
         # Load Metadata
-        print("-------------------------")
-        print("Loading metadata...")
         self.coords_metadata = self._load_json(os.path.join(data_dir, "sim_coords.json"))
         self.sim_metadata = self._load_json(os.path.join(data_dir, "sim_metadata.json"))
-        print("    Done!")
         
         # Downscale images (if needed)
         if gt_type == "optical":
-            print("-------------------------")
-            print("Computing downscaled version of GT images...")
             self.gt_img_downsc = self._downscale(self.gt_img)
-            print("    Done!")
     
     def _read_BioSR_image(
+        self,
         path_to_dir: Union[str, Path],
         img_type: Literal["digital", "digital_pf", "optical_pf"],
         idx: int
@@ -114,7 +106,7 @@ class BioSRData:
         return tiff.imread(fpath)
     
     def _downscale(self, img: np.ndarray) -> np.ndarray:
-        downscaling = self.sim_metadata["downscale"]
+        downscaling = self.sim_metadata["downscale"][1:]
         return coarsen_img(img, downscaling)
         
     def _load_json(self, fpath: str) -> dict:
@@ -133,6 +125,4 @@ class BioSRData:
         msg += "-------------------------\n"
         msg += "Simulated Metadata:\n"
         msg += "\n".join([f"+ {k}: {v}" for k, v in self.sim_metadata.items()]) + "\n"
-        msg += "-------------------------\n"
-        msg += f"PSNR (noisy vs. clean): {self.PSRN:.2f}"
         return msg
