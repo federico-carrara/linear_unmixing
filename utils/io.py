@@ -1,7 +1,7 @@
 import glob
 from pathlib import Path
 import os
-from typing import Callable, Optional, Union
+from typing import Callable, Literal, Optional, Union
 
 import numpy as np
 import tifffile as tiff
@@ -27,6 +27,7 @@ def read_multifile_tiff(
         files = sorted(files, key=sort_fn)
     arrs = [np.array(tiff.imread(f)) for f in files]
     return np.stack(arrs)
+
 
 def sorting_key(x: str) -> int:
     return int(x.split("/")[-1].split(".")[0].split("_")[-1])
