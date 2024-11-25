@@ -50,7 +50,6 @@ class BioSRData:
         """
         assert gt_type in ['digital', 'optical'], \
             ValueError("Invalid ground truth type! Choose from 'digital', 'optical'.")
-        assert idx in range(1, 101), ValueError("Invalid index! Choose from 1 to 100.")
         
         self.data_dir = data_dir
         self.idx = idx
