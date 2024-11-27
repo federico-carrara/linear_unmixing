@@ -3,7 +3,7 @@ from typing import Optional, Union
 import xarray as xr
 import numpy as np
 
-from microsim.schema.sample import Fluorophore
+from microsim.schema.sample import Fluorophore # TODO: switch to FPBase
 
 
 class FPRefMatrix:
@@ -86,7 +86,7 @@ class FPRefMatrix:
         self.fp_em_list = [
             xr.DataArray(
                 fp.emission_spectrum.intensity, 
-                coords=[fp.emission_spectrum.wavelength.magnitude], 
+                coords=[fp.emission_spectrum.wavelength], 
                 dims=["w"]
             )
             for fp in self.fp_list

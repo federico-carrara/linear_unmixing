@@ -1,10 +1,8 @@
 import os
 import json
-from pathlib import Path
-from typing import Literal, Sequence, Union
+from typing import Literal, Sequence
 
 import tifffile as tiff
-import numpy as np
 from careamics.dataset.dataset_utils.readers.astro_neurons import get_fnames
 
 
@@ -50,11 +48,7 @@ class AstroNeuronData:
             Downscaled mixed clean image. Shape (W, Z, Y, X).
         micro_gt_data: np.ndarray
             Ground truth microscopy images. Shape (F, Z, Y, X).
-        """
-        assert dim == "2D", (
-            ValueError("Only 2D data is supported for AstroNeuron dataset for now.")
-        )
-        
+        """        
         self.data_dir = data_dir
         self.idx = idx
         
