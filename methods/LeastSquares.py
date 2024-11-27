@@ -48,7 +48,7 @@ class LeastSquares:
         n, p = self.E.shape # shape: (n, p)
         
         X = np.zeros((N, p)) # shape: (N, p)
-        for i in tqdm(range(N), desc="Solving LS for pixel", disable=progr_bar):
+        for i in tqdm(range(N), desc="Solving LS for pixel", disable=not progr_bar):
             sol, _, _, _ = lstsq(a=self.E, b=self.Y[:, i])
             X[i, :] = np.array(sol).squeeze()
         X = X.T # shape: (p, N)
