@@ -68,11 +68,15 @@ class AstroNeuronData:
             img_type="raw",
             dim=dim,
         )
+        self.N = len(mixed_fnames)
         self.mixed_img = tiff.imread(mixed_fnames[idx]) # Shape (W, [Z], Y, X)
         
         # Load Metadata
         with open(os.path.join(data_dir, dset_type, "info/metadata.json")) as f:
             self.metadata = json.load(f)
+    
+    def __len__(self) -> int:
+        return self.N
     
     def __repr__(self) -> str:
         msg = "-------------------------\n"
