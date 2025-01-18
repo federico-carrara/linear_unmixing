@@ -47,10 +47,12 @@ class LeastSquares:
         n, N = self.Y.shape # shape: (n, N)
         n, p = self.E.shape # shape: (n, p)
         
-        X = np.zeros((N, p)) # shape: (N, p)
-        for i in tqdm(range(N), desc="Solving LS for pixel", disable=not progr_bar):
-            sol, _, _, _ = lstsq(a=self.E, b=self.Y[:, i])
-            X[i, :] = np.array(sol).squeeze()
-        X = X.T # shape: (p, N)
+        # --- compute LS solution
+        try:
+            EE_inv = np.linalg.inv(self.E.T @ self.E)
+        except np.linalg.LinAlgError:
+            print("Matrix (E^T*E) is singular. Using pseudo-inverse instead.")
+            EE_inv = np.linalg.pinv(self.E.T @ self.E)
+        X = EE_inv @ self.E.T @ self.Y
         new_shape = (p, *self.spatial_dims)
         return self._roll_image(X, new_shape)
