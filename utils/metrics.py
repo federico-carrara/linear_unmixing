@@ -20,8 +20,10 @@ def RangeInvariantPSNR(gt: np.ndarray, pred: np.ndarray) -> np.ndarray:
     
     NOTE: input arrays can be either 2D or 3D.
     """
-    # Compute the standardized range and ground truth
+    # Compute the standardized range for PSNR computation
     std_range = (gt.max() - gt.min()) / gt.std()
+    
+    # Standardize the ground truth
     std_gt = (gt - gt.mean()) / gt.std()
                                                                                                                                               
     # Scale the prediction to match the range of the ground truth & standardize
@@ -37,7 +39,8 @@ def fix_range(gt: np.ndarray, x: np.ndarray) -> np.ndarray:
     # Center input data on the mean
     x_ = x - x.mean()
     gt_ = gt - gt.mean()
-    # Compute scaling parameter
+    # Compute scaling parameter 
+    # (theoretically obtained by minimizing the MSE E = ||gt - a * x||^2)
     a = (gt_ * x_).sum(keepdims=True) / (x_ * x_).sum(keepdims=True)
     return a * x_
 
